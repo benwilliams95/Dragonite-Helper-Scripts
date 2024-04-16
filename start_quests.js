@@ -1,8 +1,11 @@
 const puppeteer = require('puppeteer');
 
-const BASE_URL = 'https://myurl.com'; // Dragonite URL goes here
+//////// SET THESE //////
+const BASE_URL = 'https://dragonite.myurl.com'; // Dragonite URL goes here
 const USERNAME = 'admin'; // Dragonite username goes here
 const PASSWORD = 'password'; // Dragonite password goes here
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/my-webhook/'; // Discord webhook goes here
+////////////////////////
 
 (async () => {
   const browser = await puppeteer.launch({
@@ -21,9 +24,28 @@ const PASSWORD = 'password'; // Dragonite password goes here
     console.log('Could not get to login page.');
   }
   console.log('Current URL:', page.url());
-  await page.goto(BASE_URL + '/#/areas');
+  const response = await page.goto(BASE_URL + '/api/quest/all/start');
+  const jsonResponse = await response.json();
+
+  const message = {
+    username: (jsonResponse.message == 'Quests started') ? 'Dragonite Quests: Started ✅' : 'Dragonite Quests: Error ❗',
+    avatar_url: 'https://www.serebii.net/dungeonrescueteamdx/pokemon/149.png',
+    content: jsonResponse.message,
+  };
   console.log('Current URL:', page.url());
-  await page.waitForSelector('li#start-quests'); 
-  await page.click('li#start-quests');
+  console.log('JSON: ', jsonResponse);
+  fetch(DISCORD_WEBHOOK, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(message)
+  })
+    .then(response => {
+      console.log('Message sent successfully!');
+    })
+    .catch(error => {
+      console.error('Error sending message:', error);
+    });
   await browser.close();
 })();
